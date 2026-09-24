@@ -404,42 +404,42 @@
   </div>
 </div>
  <div class="toast" id="toast">Сохранено!</div>
-<script>
+  <script>
   const gearData = {
     officer: [
       { name: 'Револьвер «Наган»', desc: '<span class="gear-dmg">урон 2</span>' },
       { name: 'Шашка', desc: '<span class="gear-dmg">урон 1</span>' },
-      { name: 'Фляга с коньяком', desc: '<span class="gear-use">раз за сцену</span> снимает 1 стресс от мистики' },
-      { name: 'Пропуск в казённые учреждения', desc: '<span class="gear-bonus">+1 куб</span> с военными и жандармами' }
+      { name: 'Фляга с коньяком', desc: '<span class="gear-use">раз за сцену</span> снимает 1 стресс' },
+      { name: 'Пропуск в учреждения', desc: '<span class="gear-bonus">+1 куб</span> к проверкам' }
     ],
     scholar: [
       { name: 'Скальпель', desc: '<span class="gear-dmg">урон 1</span>' },
-      { name: 'Врачебный саквояж', desc: '<span class="gear-use">2 использования</span>: лечит лёгкую рану или снимает яд' },
-      { name: 'Лупа и блокнот', desc: '<span class="gear-bonus">+1 куб</span> к Расследованию при осмотре улик' },
-      { name: 'Записная книжка коллег', desc: 'одна дополнительная <span class="gear-bonus">Связь</span> среди учёных' }
+      { name: 'Врачебный саквояж', desc: '<span class="gear-use">2 исп.</span>: лечит рану или яд' },
+      { name: 'Лупа и блокнот', desc: '<span class="gear-bonus">+1 куб</span> к Расследованию' },
+      { name: 'Записная книжка', desc: 'Доп. связь' }
     ],
     street: [
-      { name: 'Финский нож', desc: '<span class="gear-dmg">урон 1</span>, легко спрятать' },
-      { name: 'Набор отмычек', desc: '<span class="gear-bonus">+1 куб</span> к Ремеслу при вскрытии замков' },
-      { name: 'Тусклый фонарь', desc: 'снимает штраф темноты для одного человека' },
+      { name: 'Финский нож', desc: '<span class="gear-dmg">урон 1</span>' },
+      { name: 'Набор отмычек', desc: '<span class="gear-bonus">+1 куб</span> к Ремеслу' },
+      { name: 'Тусклый фонарь', desc: 'Снимает темноту' },
       { name: 'Верёвка с крюком', desc: '10 м' }
     ],
     spiritual: [
-      { name: 'Наперсный крест', desc: '<span class="gear-bonus">+1 куб</span> к Хладнокровию против нечисти' },
-      { name: 'Флакон святой воды', desc: '<span class="gear-use">1 использование</span>: 1 ранение сущности или отпугивание на сцену' },
-      { name: 'Молитвенник и требник', desc: '<span class="gear-bonus">+1 куб</span> к Знаниям при опознании нечисти' },
-      { name: 'Ладан и кадило', desc: 'на 1 час замедляет Завесу в помещении: <span class="gear-bonus">следующий сдвиг −1</span>' }
+      { name: 'Наперсный крест', desc: '<span class="gear-bonus">+1 куб</span> к Хладнокровию' },
+      { name: 'Флакон святой воды', desc: '<span class="gear-use">1 исп.</span>: ранит сущность' },
+      { name: 'Молитвенник', desc: '<span class="gear-bonus">+1 куб</span> к Знаниям' },
+      { name: 'Ладан', desc: 'Замедляет Завесу' }
     ],
     merchant: [
-      { name: 'Револьвер «Бульдог»', desc: '<span class="gear-dmg">урон 1</span>, карманный' },
-      { name: 'Кошелёк с золотом', desc: '<span class="gear-bonus">+1 куб</span> к Красноречию при торге и подкупе' },
-      { name: 'Визитные карточки', desc: '<span class="gear-bonus">+1 куб</span> в деловых кругах' },
-      { name: 'Складной нож и карманные часы', desc: '<span class="gear-dmg">урон 1</span>' }
+      { name: 'Револьвер «Бульдог»', desc: '<span class="gear-dmg">урон 1</span>' },
+      { name: 'Кошелёк с золотом', desc: '<span class="gear-bonus">+1 куб</span> к Красноречию' },
+      { name: 'Визитки', desc: 'Авторитет' },
+      { name: 'Складной нож', desc: 'урон 1' }
     ],
     hunter: [
-      { name: 'Двустволка', desc: '<span class="gear-dmg">урон 2</span>, громоздкая — не спрячешь' },
+      { name: 'Двустволка', desc: '<span class="gear-dmg">урон 2</span>' },
       { name: 'Охотничий нож', desc: '<span class="gear-dmg">урон 1</span>' },
-      { name: 'Тёплая шуба', desc: '<span class="gear-bonus">+1 куб</span> к Стойкости против холода' },
+      { name: 'Тёплая шуба', desc: '<span class="gear-bonus">+1 куб</span> к Стойкости' },
       { name: 'Капкан и огниво', desc: '' }
     ]
   };
@@ -448,19 +448,15 @@
     const key = document.getElementById('gear').value;
     const box = document.getElementById('gearDetails');
     if (!key || !gearData[key]) {
-      box.classList.remove('visible');
-      box.innerHTML = '';
-      return;
+      box.classList.remove('visible'); box.innerHTML = ''; return;
     }
     let html = '';
     gearData[key].forEach(item => {
-      html += '<div class="gear-item">';
-      html += '<span class="gear-item-name">• ' + item.name + '</span>';
+      html += '<div class="gear-item"><span class="gear-item-name">• ' + item.name + '</span>';
       if (item.desc) html += ' — ' + item.desc;
       html += '</div>';
     });
-    box.innerHTML = html;
-    box.classList.add('visible');
+    box.innerHTML = html; box.classList.add('visible');
   }
 
   function getSpentPoints() {
@@ -487,14 +483,8 @@
     const spent = getSpentPoints();
 
     if (d === 1) {
-      if (currentVal >= 3) {
-        showToast('Максимальный уровень навыка на старте — 3!', true);
-        return;
-      }
-      if (spent >= 8) {
-        showToast('Все 8 очков уже распределены!', true);
-        return;
-      }
+      if (currentVal >= 3) { showToast('Максимум на старте — 3!', true); return; }
+      if (spent >= 8) { showToast('Очки закончились!', true); return; }
       valEl.textContent = currentVal + 1;
     } else if (d === -1) {
       if (currentVal <= 0) return;
@@ -503,10 +493,64 @@
     updatePointsDisplay();
   }
 
+  /* === НОВАЯ СИСТЕМА БРОСКА (PULL OF DICE) === */
+  function rollSkill(name, level) {
+    const diceCount = 1 + level; // 1 базовый + уровень навыка
+    const rolls = [];
+    
+    // Бросаем кубики d6
+    for (let i = 0; i < diceCount; i++) {
+      rolls.push(Math.floor(Math.random() * 6) + 1);
+    }
+    
+    // Находим лучший результат
+    const bestResult = Math.max(...rolls);
+    
+    document.getElementById('rollSkillName').textContent = name;
+    
+    // Красиво выводим результаты бросков
+    let formula = 'Брошено кубов: <strong>' + diceCount + 'д6</strong><br><br>';
+    
+    // Подсвечиваем выпавшие кубики
+    const rollsHtml = rolls.map(r => {
+      if (r === bestResult) {
+        // Лучший кубик делаем крупным и золотым/красным
+        return '<span class="roll-die" style="font-size: 1.4em; border: 2px solid #8b2500; padding: 4px 8px; margin: 0 4px; border-radius: 4px; background: #e8d8b0;">' + r + '</span>';
+      } else {
+        // Остальные кубики обычные серые
+        return '<span style="color: #8a7050; border: 1px solid #c4a96a; padding: 3px 6px; margin: 0 4px; border-radius: 4px; opacity: 0.6;">' + r + '</span>';
+      }
+    }).join(' ');
+    
+    formula += '<div style="margin: 15px 0;">' + rollsHtml + '</div>';
+    
+    if (level > 0) {
+      formula += '<span style="font-size: 0.82em; color: #6b5a3e;">(Выбран наибольший результат)</span>';
+    } else {
+      formula += '<span style="font-size: 0.82em; color: #8a7050;">(Навык не прокачан, брошен 1 базовый куб)</span>';
+    }
+    
+    document.getElementById('rollFormula').innerHTML = formula;
+    document.getElementById('rollTotal').textContent = bestResult;
+    document.getElementById('rollModal').classList.add('show');
+  }
+
+  function closeRoll() {
+    document.getElementById('rollModal').classList.remove('show');
+  }
+
+  document.querySelectorAll('.skill-name').forEach(el => {
+    el.addEventListener('click', function() {
+      const row = this.closest('.skill-row');
+      const valEl = row.querySelector('.skill-val');
+      const level = parseInt(valEl.textContent) || 0;
+      rollSkill(this.textContent, level);
+    });
+  });
+
   function setWound(level) {
     document.querySelectorAll('.wound-step').forEach(s => {
-      const w = parseInt(s.dataset.w);
-      s.className = 'wound-step';
+      const w = parseInt(s.dataset.w); s.className = 'wound-step';
       if (w === 0 && level === 0) s.classList.add('active');
       if (level === 1 && w === 1) s.classList.add('w1');
       if (level === 2 && w >= 1 && w <= 2) s.classList.add('w2');
@@ -522,7 +566,7 @@
   }
 
   function save() {
-    localStorage.setItem('rpg_sheet', JSON.stringify(gather()));
+    localStorage.setItem('rpg_sheet_v2', JSON.stringify(gather()));
     showToast('Сохранено!');
   }
 
@@ -549,7 +593,7 @@
   }
 
   function load() {
-    const raw = localStorage.getItem('rpg_sheet');
+    const raw = localStorage.getItem('rpg_sheet_v2');
     if (!raw) { updatePointsDisplay(); return; }
     try {
       const d = JSON.parse(raw);
@@ -569,17 +613,15 @@
         });
       }
       document.getElementById('gear').value = d.gear || '';
-      showGear();
-      setWound(d.wound || 0);
+      showGear(); setWound(d.wound || 0);
       document.getElementById('story').value = d.story || '';
       updatePointsDisplay();
     } catch(e) { updatePointsDisplay(); }
   }
 
   function resetAll() {
-    if (!confirm('Стереть все данные персонажа?')) return;
-    localStorage.removeItem('rpg_sheet');
-    location.reload();
+    if (!confirm('Стереть все данные?')) return;
+    localStorage.removeItem('rpg_sheet_v2'); location.reload();
   }
 
   function exportData() {
@@ -587,66 +629,28 @@
     const blob = new Blob([JSON.stringify(data, null, 2)], {type:'application/json'});
     const a = document.createElement('a');
     a.href = URL.createObjectURL(blob);
-    a.download = (data.name || 'character') + '.json';
-    a.click();
-    showToast('Файл скачан!');
+    a.download = (data.name || 'character') + '.json'; a.click();
+    showToast('Скачано!');
   }
 
   function importData(e) {
-    const file = e.target.files[0];
-    if (!file) return;
+    const file = e.target.files[0]; if (!file) return;
     const reader = new FileReader();
     reader.onload = function(ev) {
       try {
         const d = JSON.parse(ev.target.result);
-        localStorage.setItem('rpg_sheet', JSON.stringify(d));
-        load();
-        showToast('Импортировано!');
-      } catch(err) {
-        showToast('Ошибка файла', true);
-      }
+        localStorage.setItem('rpg_sheet_v2', JSON.stringify(d));
+        load(); showToast('Импортировано!');
+      } catch(err) { showToast('Ошибка файла', true); }
     };
     reader.readAsText(file);
   }
 
   function showToast(msg, isWarn) {
-    const t = document.getElementById('toast');
-    t.textContent = msg;
-    t.className = 'toast';
-    if (isWarn) t.classList.add('warn');
-    t.classList.add('show');
-    setTimeout(() => t.classList.remove('show'), 2000);
+    const t = document.getElementById('toast'); t.textContent = msg;
+    t.className = 'toast'; if (isWarn) t.classList.add('warn');
+    t.classList.add('show'); setTimeout(() => t.classList.remove('show'), 2000);
   }
 
-   function rollSkill(name, level) {
-    const die = Math.floor(Math.random() * 6) + 1;
-    const total = die + level;
-    document.getElementById('rollSkillName').textContent = name;
-    let formula = '🎲 <span class="roll-die">' + die + '</span>';
-    if (level > 0) {
-      formula += ' + <span class="roll-bonus">' + level + '</span> (навык)';
-    } else {
-      formula += ' <span style="color:#8a7050">(навык не прокачен)</span>';
-    }
-    document.getElementById('rollFormula').innerHTML = formula;
-    document.getElementById('rollTotal').textContent = total;
-    document.getElementById('rollModal').classList.add('show');
-  }
-
-  function closeRoll() {
-    document.getElementById('rollModal').classList.remove('show');
-  }
-
-  document.querySelectorAll('.skill-name').forEach(el => {
-    el.addEventListener('click', function() {
-      const row = this.closest('.skill-row');
-      const valEl = row.querySelector('.skill-val');
-      const level = parseInt(valEl.textContent) || 0;
-      rollSkill(this.textContent, level);
-    });
-  });
   load();
-</script>
-
-</body>
-</html>
+  </script>
