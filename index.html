@@ -227,6 +227,67 @@
   .toast.warn { background: #8b4040; }
 
   .divider { border: none; border-top: 1px dashed #c4a96a; margin: 16px 0; }
+  .skill-name { cursor: pointer; user-select: none; }
+  .skill-name:active { color: #8b2500; }
+  .roll-hint {
+    font-size: 0.78em;
+    color: #8a7050;
+    text-align: center;
+    margin: -8px 0 12px;
+    font-style: italic;
+  }
+  .roll-modal {
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,0.75);
+    display: none;
+    align-items: center; justify-content: center;
+    z-index: 100;
+    padding: 20px;
+  }
+  .roll-modal.show { display: flex; }
+  .roll-content {
+    background: #f4e8c1;
+    border: 2px solid #8b2500;
+    border-radius: 10px;
+    padding: 24px 20px;
+    text-align: center;
+    min-width: 260px;
+    max-width: 100%;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.7);
+  }
+  .roll-skill-name {
+    font-size: 1.15em;
+    color: #6b4423;
+    margin-bottom: 8px;
+    font-weight: bold;
+    letter-spacing: 1px;
+  }
+  .roll-formula {
+    font-size: 1em;
+    color: #6b5a3e;
+    margin-bottom: 8px;
+  }
+  .roll-die { color: #2a5a8b; font-weight: bold; }
+  .roll-bonus { color: #5a7a3a; font-weight: bold; }
+  .roll-total {
+    font-size: 2.6em;
+    font-weight: bold;
+    color: #8b2500;
+    margin: 6px 0 14px;
+    line-height: 1;
+  }
+  .roll-close {
+    padding: 10px 28px;
+    background: #6b4423;
+    color: #fff;
+    border: none;
+    border-radius: 6px;
+    font-family: inherit;
+    font-size: 0.9em;
+    font-weight: bold;
+    cursor: pointer;
+    letter-spacing: 1px;
+  }
 </style>
 </head>
 <body>
@@ -261,6 +322,7 @@
   <div class="points-pool">
     Свободные очки навыков: <span id="skill-points">8</span> / 8
   </div>
+   <div class="roll-hint">🎲 Тапни по названию навыка, чтобы бросить кубик</div>
 
   <div class="skill-category str">
     <h3>💪 Сила</h3>
@@ -333,7 +395,15 @@
   </div>
 </div>
 
-<div class="toast" id="toast">Сохранено!</div>
+<div class="roll-modal" id="rollModal" onclick="closeRoll()">
+  <div class="roll-content" onclick="event.stopPropagation()">
+    <div class="roll-skill-name" id="rollSkillName"></div>
+    <div class="roll-formula" id="rollFormula"></div>
+    <div class="roll-total" id="rollTotal">—</div>
+    <button class="roll-close" onclick="closeRoll()">Закрыть</button>
+  </div>
+</div>
+ <div class="toast" id="toast">Сохранено!</div>
 <script>
   const gearData = {
     officer: [
@@ -548,6 +618,33 @@
     setTimeout(() => t.classList.remove('show'), 2000);
   }
 
+   function rollSkill(name, level) {
+    const die = Math.floor(Math.random() * 6) + 1;
+    const total = die + level;
+    document.getElementById('rollSkillName').textContent = name;
+    let formula = '🎲 <span class="roll-die">' + die + '</span>';
+    if (level > 0) {
+      formula += ' + <span class="roll-bonus">' + level + '</span> (навык)';
+    } else {
+      formula += ' <span style="color:#8a7050">(навык не прокачен)</span>';
+    }
+    document.getElementById('rollFormula').innerHTML = formula;
+    document.getElementById('rollTotal').textContent = total;
+    document.getElementById('rollModal').classList.add('show');
+  }
+
+  function closeRoll() {
+    document.getElementById('rollModal').classList.remove('show');
+  }
+
+  document.querySelectorAll('.skill-name').forEach(el => {
+    el.addEventListener('click', function() {
+      const row = this.closest('.skill-row');
+      const valEl = row.querySelector('.skill-val');
+      const level = parseInt(valEl.textContent) || 0;
+      rollSkill(this.textContent, level);
+    });
+  });
   load();
 </script>
 
