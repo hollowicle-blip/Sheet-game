@@ -125,6 +125,62 @@
     color: #8b2500; font-weight: bold; font-style: italic;
   }
   .wound-step.death { background: #1a1410; color: #8b2500; border-color: #1a1410; }
+   /* Общие трекеры */
+  .tracker-block { margin-bottom: 16px; }
+  .tracker-header {
+    display: flex; justify-content: space-between; align-items: center;
+    margin-bottom: 6px;
+  }
+  .tracker-title { font-size: 0.9em; font-weight: bold; color: #6b4423; }
+  .tracker-count { font-size: 0.85em; color: #8a7050; font-family: monospace; }
+  .tracker-cells {
+    display: flex; gap: 4px; flex-wrap: wrap;
+  }
+  .tracker-cell {
+    flex: 1; min-width: 22px; height: 26px;
+    border: 2px solid #c4a96a; border-radius: 4px;
+    background: #faf3e0; cursor: pointer;
+    transition: all 0.15s;
+  }
+  .tracker-cell:active { transform: scale(0.9); }
+  .tracker-cell.filled-veil { background: #5a3a8b; border-color: #5a3a8b; }
+  .tracker-cell.filled-goal { background: #5a7a3a; border-color: #5a7a3a; }
+  .tracker-cell.veil-max {
+    background: #8b2500; border-color: #8b2500;
+    animation: pulse 1.2s infinite;
+  }
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.6; }
+  }
+  .time-tracker { display: flex; gap: 6px; }
+  .time-cell {
+    flex: 1; padding: 10px 4px; text-align: center;
+    border: 2px solid #c4a96a; border-radius: 6px;
+    background: #faf3e0; cursor: pointer;
+    font-size: 0.85em; font-weight: bold; color: #8a7050;
+    transition: all 0.2s;
+  }
+  .time-cell:active { transform: scale(0.95); }
+  .time-cell.active-morning { background: #f4c060; color: #5a3a1a; border-color: #d4a030; }
+  .time-cell.active-day { background: #8bb8d4; color: #1a3a5a; border-color: #4a8ab0; }
+  .time-cell.active-evening { background: #c4652a; color: #fff; border-color: #8b4020; }
+  .time-cell.active-night { background: #2a2a4a; color: #c4a96a; border-color: #1a1a3a; }
+  .goal-controls {
+    display: flex; gap: 6px; align-items: center;
+    margin-bottom: 6px; font-size: 0.85em;
+  }
+  .goal-size-btn {
+    width: 26px; height: 26px; border: 1px solid #a08050;
+    background: #e8d8b0; border-radius: 50%; cursor: pointer;
+    color: #5a3a1a; font-weight: bold; font-size: 1em;
+  }
+  .goal-size-btn:active { background: #d4c090; }
+  .goal-name-input {
+    flex: 1; padding: 4px 8px; border: 1px solid #c4a96a;
+    border-radius: 4px; background: #faf3e0; font-family: inherit;
+    font-size: 0.85em; color: #3b2f1e; margin: 0;
+  }
  .actions { display: flex; gap: 8px; margin-top: 16px; flex-wrap: wrap; }
   .btn {
     flex: 1; min-width: 110px; padding: 12px; border: none;
@@ -232,7 +288,46 @@
   </div>
   <ul class="found-list" id="foundList"></ul>
   <div class="found-empty" id="foundEmpty">Пока пусто. Предметы появятся здесь по ходу игры.</div>
+  <h2>⚙ Общие трекеры</h2>
 
+  <!-- Трекер Завесы -->
+  <div class="tracker-block">
+    <div class="tracker-header">
+      <span class="tracker-title">🕯 Завеса</span>
+      <span class="tracker-count"><span id="veilCount">0</span> / 10</span>
+    </div>
+    <div class="tracker-cells" id="veilCells"></div>
+  </div>
+
+  <!-- Трекер времени суток -->
+  <div class="tracker-block">
+    <div class="tracker-header">
+      <span class="tracker-title">🕰 Время суток</span>
+    </div>
+    <div class="time-tracker">
+      <div class="time-cell" data-time="morning" onclick="setTime('morning')">🌅 Утро</div>
+      <div class="time-cell" data-time="day" onclick="setTime('day')">☀ День</div>
+      <div class="time-cell" data-time="evening" onclick="setTime('evening')">🌆 Вечер</div>
+      <div class="time-cell" data-time="night" onclick="setTime('night')">🌙 Ночь</div>
+    </div>
+  </div>
+
+  <!-- Трекер Цели -->
+  <div class="tracker-block">
+    <div class="tracker-header">
+      <span class="tracker-title">🎯 Цель</span>
+      <span class="tracker-count"><span id="goalCount">0</span> / <span id="goalMax">6</span></span>
+    </div>
+    <div class="goal-controls">
+      <input type="text" class="goal-name-input" id="goalName" placeholder="Описание цели..." oninput="saveTrackers()">
+      <span>делений:</span>
+      <button class="goal-size-btn" onclick="changeGoalSize(-1)">−</button>
+      <span id="goalSizeDisplay">6</span>
+      <button class="goal-size-btn" onclick="changeGoalSize(1)">+</button>
+    </div>
+    <div class="tracker-cells" id="goalCells"></div>
+  </div>
+   
     <h2>🩸 Ранения</h2>
   <div class="wound-tracker">
     <div class="wound-step active" data-w="0" onclick="setWound(0)">Здоров</div>
@@ -464,7 +559,7 @@
     return 0;
   }
 
-  function gather() {
+    function gather() {
     const skills = {};
     document.querySelectorAll('.skill-val').forEach(s => { skills[s.dataset.skill] = parseInt(s.textContent); });
     return {
@@ -476,18 +571,24 @@
       gear: document.getElementById('gear').value,
       removedGear, foundItems,
       wound: getWoundLevel(),
-      story: document.getElementById('story').value
+      story: document.getElementById('story').value,
+      veil: veilValue,
+      time: currentTime,
+      goalName: document.getElementById('goalName').value,
+      goalMax: goalMax,
+      goalValue: goalValue
     };
-  }
+    }
 
-  function save() {
-    localStorage.setItem('rpg_sheet_v3', JSON.stringify(gather()));
+    function save() {
+    localStorage.setItem('rpg_sheet_v4', JSON.stringify(gather()));
     showToast('Сохранено!');
-  }
+ }
 
   function load() {
-    const raw = localStorage.getItem('rpg_sheet_v3');
-    if (!raw) { updatePointsDisplay(); renderFoundItems(); return; }
+    function load() {
+    const raw = localStorage.getItem('rpg_sheet_v4');
+    if (!raw) { updatePointsDisplay(); renderFoundItems(); renderVeil(); renderGoal(); return; }
     try {
       const d = JSON.parse(raw);
       document.getElementById('name').value = d.name || '';
@@ -505,14 +606,20 @@
       showGear(); renderFoundItems();
       setWound(d.wound || 0);
       document.getElementById('story').value = d.story || '';
+      veilValue = d.veil || 0;
+      currentTime = d.time || '';
+      goalMax = d.goalMax || 6;
+      goalValue = d.goalValue || 0;
+      document.getElementById('goalName').value = d.goalName || '';
+      renderVeil(); setTime(currentTime); renderGoal();
       updatePointsDisplay();
-    } catch(e) { updatePointsDisplay(); renderFoundItems(); }
-  }
+    } catch(e) { updatePointsDisplay(); renderFoundItems(); renderVeil(); renderGoal(); }
+    }
 
-  function resetAll() {
+    function resetAll() {
     if (!confirm('Стереть все данные?')) return;
-    localStorage.removeItem('rpg_sheet_v3'); location.reload();
-  }
+    localStorage.removeItem('rpg_sheet_v4'); location.reload();
+    }
 
   function exportData() {
     const d = gather();
@@ -538,7 +645,90 @@
     t.className = 'toast'; if (isWarn) t.classList.add('warn');
     t.classList.add('show'); setTimeout(() => t.classList.remove('show'), 2000);
   }
+  /* === ТРЕКЕРЫ === */
+  let veilValue = 0;
+  let currentTime = '';
+  let goalMax = 6;
+  let goalValue = 0;
 
+  function renderVeil() {
+    const box = document.getElementById('veilCells');
+    let html = '';
+    for (let i = 1; i <= 10; i++) {
+      let cls = 'tracker-cell';
+      if (i <= veilValue) cls += ' filled-veil';
+      if (veilValue >= 10 && i === 10) cls += ' veil-max';
+      html += '<div class="' + cls + '" onclick="setVeil(' + i + ')"></div>';
+    }
+    box.innerHTML = html;
+    document.getElementById('veilCount').textContent = veilValue;
+  }
+
+  function setVeil(n) {
+    veilValue = (veilValue === n) ? n - 1 : n;
+    if (veilValue < 0) veilValue = 0;
+    renderVeil();
+    saveTrackers();
+    if (veilValue >= 10) showToast('☠ Завеса разорвана!', true);
+  }
+
+  function setTime(time) {
+    currentTime = time;
+    document.querySelectorAll('.time-cell').forEach(c => {
+      c.className = 'time-cell';
+      if (c.dataset.time === time) c.classList.add('active-' + time);
+    });
+    saveTrackers();
+  }
+
+  function renderGoal() {
+    const box = document.getElementById('goalCells');
+    let html = '';
+    for (let i = 1; i <= goalMax; i++) {
+      let cls = 'tracker-cell';
+      if (i <= goalValue) cls += ' filled-goal';
+      html += '<div class="' + cls + '" onclick="setGoal(' + i + ')"></div>';
+    }
+    box.innerHTML = html;
+    document.getElementById('goalCount').textContent = goalValue;
+    document.getElementById('goalMax').textContent = goalMax;
+    document.getElementById('goalSizeDisplay').textContent = goalMax;
+  }
+
+  function setGoal(n) {
+    goalValue = (goalValue === n) ? n - 1 : n;
+    if (goalValue < 0) goalValue = 0;
+    renderGoal();
+    saveTrackers();
+    if (goalValue >= goalMax) showToast('🎯 Цель достигнута!');
+  }
+
+  function changeGoalSize(d) {
+    const newSize = goalMax + d;
+    if (newSize < 4) { showToast('Минимум 4 деления', true); return; }
+    if (newSize > 10) { showToast('Максимум 10 делений', true); return; }
+    goalMax = newSize;
+    if (goalValue > goalMax) goalValue = goalMax;
+    renderGoal();
+    saveTrackers();
+  }
+
+  function saveTrackers() {
+    // Тихое автосохранение при изменении трекеров
+    const existing = localStorage.getItem('rpg_sheet_v4');
+    if (existing) {
+      try {
+        const d = JSON.parse(existing);
+        d.veil = veilValue;
+        d.time = currentTime;
+        d.goalName = document.getElementById('goalName').value;
+        d.goalMax = goalMax;
+        d.goalValue = goalValue;
+        localStorage.setItem('rpg_sheet_v4', JSON.stringify(d));
+      } catch(e) {}
+    }
+ }
+   
   load();
 </script>
 </body>
