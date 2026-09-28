@@ -120,7 +120,12 @@
   .wound-step.w1 { background: #d4a030; color: #fff; border-color: #d4a030; }
   .wound-step.w2 { background: #c4652a; color: #fff; border-color: #c4652a; }
   .wound-step.w3 { background: #8b2500; color: #fff; border-color: #8b2500; }
-  .actions { display: flex; gap: 8px; margin-top: 16px; flex-wrap: wrap; }
+   .wound-penalty {
+    font-size: 0.8em; text-align: center; margin-top: 6px;
+    color: #8b2500; font-weight: bold; font-style: italic;
+  }
+  .wound-step.death { background: #1a1410; color: #8b2500; border-color: #1a1410; }
+ .actions { display: flex; gap: 8px; margin-top: 16px; flex-wrap: wrap; }
   .btn {
     flex: 1; min-width: 110px; padding: 12px; border: none;
     border-radius: 6px; font-family: inherit; font-size: 0.9em;
@@ -228,13 +233,14 @@
   <ul class="found-list" id="foundList"></ul>
   <div class="found-empty" id="foundEmpty">Пока пусто. Предметы появятся здесь по ходу игры.</div>
 
-  <h2>🩸 Ранения</h2>
+    <h2>🩸 Ранения</h2>
   <div class="wound-tracker">
     <div class="wound-step active" data-w="0" onclick="setWound(0)">Здоров</div>
     <div class="wound-step" data-w="1" onclick="setWound(1)">I</div>
     <div class="wound-step" data-w="2" onclick="setWound(2)">II</div>
-    <div class="wound-step" data-w="3" onclick="setWound(3)">III</div>
+    <div class="wound-step" data-w="3" onclick="setWound(3)">☠ СМЕРТЬ</div>
   </div>
+  <div class="wound-penalty" id="woundPenalty"></div>
 
   <h2>📖 История</h2>
   <textarea id="story" rows="5" placeholder="Расскажи историю своего персонажа..."></textarea>
@@ -392,13 +398,28 @@
     updatePointsDisplay();
   }
 
-  function rollSkill(name, level) {
-    const n = 1 + level; const rolls = [];
-    for (let i = 0; i < n; i++) rolls.push(Math.floor(Math.random() * 6) + 1);
+    function rollSkill(name, level) {
+    const woundLevel = getWoundLevel();
+    if (woundLevel >= 3) {
+      showToast('☠ Персонаж мёртв и не может действовать!', true);
+      return;
+    }
+    const penalty = woundLevel;
+    const baseDice = 1 + level;
+    const actualDice = Math.max(1, baseDice - penalty);
+    const rolls = [];
+    for (let i = 0; i < actualDice; i++) rolls.push(Math.floor(Math.random() * 6) + 1);
     const best = Math.max(...rolls);
     document.getElementById('rollSkillName').textContent = name;
-    let f = 'Брошено: <strong>' + n + 'д6</strong><br><br>';
-    f += '<div style="margin:15px 0">' + rolls.map(r =>
+    let f = '';
+    if (penalty > 0) {
+      f += '<span style="color:#8b2500;font-size:0.85em">⚠ Ранение ' + woundLevel + ': −' + penalty + ' куб</span><br><br>';
+    }
+    f += 'Брошено: <strong>' + actualDice + 'д6</strong>';
+    if (penalty > 0 && baseDice > actualDice) {
+      f += ' <span style="color:#8a7050;font-size:0.82em">(было бы ' + baseDice + 'д6)</span>';
+    }
+    f += '<br><br><div style="margin:15px 0">' + rolls.map(r =>
       r === best
         ? '<span style="font-size:1.4em;border:2px solid #8b2500;padding:4px 8px;margin:0 4px;border-radius:4px;background:#e8d8b0;color:#2a5a8b;font-weight:bold">' + r + '</span>'
         : '<span style="color:#8a7050;border:1px solid #c4a96a;padding:3px 6px;margin:0 4px;border-radius:4px;opacity:0.6">' + r + '</span>'
@@ -409,7 +430,7 @@
     document.getElementById('rollFormula').innerHTML = f;
     document.getElementById('rollTotal').textContent = best;
     document.getElementById('rollModal').classList.add('show');
-  }
+    }
 
   function closeRoll() { document.getElementById('rollModal').classList.remove('show'); }
 
@@ -420,15 +441,21 @@
     });
   });
 
-  function setWound(level) {
+    function setWound(level) {
     document.querySelectorAll('.wound-step').forEach(s => {
       const w = parseInt(s.dataset.w); s.className = 'wound-step';
       if (w === 0 && level === 0) s.classList.add('active');
       if (level === 1 && w === 1) s.classList.add('w1');
       if (level === 2 && w >= 1 && w <= 2) s.classList.add('w2');
       if (level === 3 && w >= 1 && w <= 3) s.classList.add('w3');
+      if (level === 3 && w === 3) s.classList.add('death');
     });
-  }
+    const pen = document.getElementById('woundPenalty');
+    if (level === 0) pen.textContent = '';
+    else if (level === 1) pen.textContent = '⚠ Штраф: −1 кубик ко всем броскам';
+    else if (level === 2) pen.textContent = '⚠ Штраф: −2 кубика ко всем броскам';
+    else if (level === 3) pen.textContent = '☠ Персонаж мёртв';
+    }
 
   function getWoundLevel() {
     if (document.querySelector('.wound-step.w3')) return 3;
