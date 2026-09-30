@@ -66,6 +66,30 @@
   }
   #skill-points { color: #8b2500; font-size: 1.25em; font-family: monospace; }
   .cap-info { display: block; font-size: 0.75em; color: #8a7050; font-weight: normal; margin-top: 2px; }
+   .estate-hint {
+    background: rgba(90,58,26,0.08);
+    border: 1px solid #c4a96a;
+    border-left: 3px solid #6b4423;
+    border-radius: 6px;
+    padding: 10px 12px;
+    margin-bottom: 12px;
+    font-size: 0.85em;
+    line-height: 1.5;
+    display: none;
+  }
+  .estate-hint.visible { display: block; }
+  .estate-hint-title {
+    font-weight: bold;
+    color: #6b4423;
+    margin-bottom: 4px;
+  }
+  .estate-circle {
+    color: #2a5a8b;
+    font-style: italic;
+  }
+  .estate-duty {
+    color: #8b2500;
+  }
   .roll-hint { font-size: 0.78em; color: #8a7050; text-align: center; margin: -8px 0 12px; font-style: italic; }
   .skill-category {
     background: rgba(180,150,90,0.12); border-radius: 6px;
@@ -264,7 +288,7 @@
     <div><label>Возраст</label><input type="number" id="age" placeholder="25" min="1" max="120"></div>
   </div>
   <label>Сословие</label>
-  <select id="estate">
+    <select id="estate" onchange="showEstateHint()">
     <option value="">— Выбери сословие —</option>
     <option>Дворянство</option><option>Купечество</option>
     <option>Разночинцы</option><option>Духовенство</option>
@@ -284,6 +308,7 @@
     </div>
   </div>
 
+     <div class="estate-hint" id="estateHint"></div>
   <h2>⚔ Навыки</h2>
   <div class="points-pool">
     Свободные очки навыков: <span id="skill-points">8</span> / <span id="skill-points-max">8</span>
@@ -459,6 +484,60 @@
   function getMaxPoints(level) { return 4 + level * 4; }   // Ур.1=8, Ур.2=12, Ур.3=16...
   function getSkillCap(level) { return 2 + level; }         // Ур.1=3, Ур.2=4, Ур.3=5...
 
+     const estateData = {
+    'Дворянство': {
+      icon: '👑',
+      circle: 'Офицеры, губернаторы, светское общество, придворные.',
+      duty: 'Честь рода. Дворянин обязан защищать фамильную репутацию — трусость или бесчестие ложатся позором на всю семью. Вызов на дуэль нельзя отклонить без потери лица.',
+      bonus: '+1 куб в общении с чиновниками и военными'
+    },
+    'Купечество': {
+      icon: '💰',
+      circle: 'Торговцы, банкиры, владельцы мануфактур, биржевые маклеры.',
+      duty: 'Слово купца. Нарушенная сделка разрушит деловую репутацию. Купец обязан платить по долгам и держать данное слово, даже если это невыгодно.',
+      bonus: '+1 куб при торговле и подкупе'
+    },
+    'Разночинцы': {
+      icon: '🎓',
+      circle: 'Учёные, врачи, адвокаты, журналисты, студенты.',
+      duty: 'Служение идее. Разночинец живёт ради прогресса и просвещения. От него ждут, что он не промолчит перед несправедливостью, даже если это опасно.',
+      bonus: '+1 куб в учёных и либеральных кругах'
+    },
+    'Духовенство': {
+      icon: '✝',
+      circle: 'Священники, монахи, церковные старосты, богомольцы.',
+      duty: 'Пастырский долг. Духовное лицо обязано утешать страждущих и не может отказать в исповеди или последнем причастии, даже врагу.',
+      bonus: '+1 куб среди верующих и в церковных делах'
+    },
+    'Мещане': {
+      icon: '🏠',
+      circle: 'Ремесленники, лавочники, мелкие служащие, городская публика.',
+      duty: 'Добропорядочность. Мещанин обязан соблюдать закон и приличия. Скандал или связь с криминалом обернётся доносом соседей и вниманием полиции.',
+      bonus: '+1 куб среди горожан и в бытовых делах'
+    },
+    'Крестьяне': {
+      icon: '🌾',
+      circle: 'Деревенские жители, извозчики, прислуга, артельщики.',
+      duty: 'Общинный долг. Крестьянин связан с миром (общиной). Отказ помочь односельчанину — предательство. Община защитит своего, но и спросит сполна.',
+      bonus: '+1 куб среди простого народа и на природе'
+    }
+  };
+
+  function showEstateHint() {
+    const estate = document.getElementById('estate').value;
+    const hint = document.getElementById('estateHint');
+    const data = estateData[estate];
+    if (!data) {
+      hint.classList.remove('visible');
+      hint.innerHTML = '';
+      return;
+    }
+    hint.innerHTML = '<div class="estate-hint-title">' + data.icon + ' ' + estate + '</div>'
+      + '<div class="estate-circle">🤝 <strong>Свои круги:</strong> ' + data.circle + '</div>'
+      + '<div style="margin-top:6px"><span class="estate-duty">⚖ <strong>Обязательство:</strong> ' + data.duty + '</span></div>'
+      + '<div style="margin-top:6px;color:#5a7a3a;font-weight:bold">🎲 ' + data.bonus + '</div>';
+    hint.classList.add('visible');
+   }
   const gearData = {
     officer: [
       { name: 'Револьвер «Наган»', desc: '<span class="gear-dmg">урон 2</span>' },
