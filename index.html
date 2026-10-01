@@ -202,6 +202,94 @@
     color: #8b2500; font-weight: bold; font-style: italic; display: none;
   }
   .night-penalty-hint.visible { display: block; }
+   .psychosis-list { list-style: none; padding: 0; margin: 0; }
+  .psychosis-item {
+    background: rgba(90,30,60,0.08);
+    border: 1px solid #8b2500;
+    border-radius: 6px;
+    padding: 8px 10px;
+    margin-bottom: 6px;
+    font-size: 0.85em;
+    line-height: 1.4;
+  }
+  .psychosis-name {
+    font-weight: bold;
+    color: #8b2500;
+  }
+  .psychosis-effect {
+    color: #5a3a1a;
+    font-style: italic;
+    margin-top: 2px;
+  }
+  .psychosis-empty {
+    font-size: 0.85em;
+    color: #8a7050;
+    font-style: italic;
+    text-align: center;
+    padding: 8px;
+  }
+  .psychosis-modal {
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,0.85);
+    display: none;
+    align-items: center; justify-content: center;
+    z-index: 200; padding: 20px;
+  }
+  .psychosis-modal.show { display: flex; }
+  .psychosis-content {
+    background: #f4e8c1;
+    border: 3px solid #8b2500;
+    border-radius: 12px;
+    padding: 28px 20px;
+    text-align: center;
+    max-width: 340px;
+    width: 100%;
+    box-shadow: 0 0 60px rgba(139,37,0,0.5);
+    animation: psychosisShake 0.5s ease-out;
+  }
+  @keyframes psychosisShake {
+    0%, 100% { transform: translateX(0); }
+    20% { transform: translateX(-8px) rotate(-1deg); }
+    40% { transform: translateX(8px) rotate(1deg); }
+    60% { transform: translateX(-4px); }
+    80% { transform: translateX(4px); }
+  }
+  .psychosis-title {
+    font-size: 1.3em;
+    color: #8b2500;
+    font-weight: bold;
+    margin-bottom: 12px;
+    letter-spacing: 2px;
+  }
+  .psychosis-reveal {
+    font-size: 1.1em;
+    color: #5a3a1a;
+    font-weight: bold;
+    margin: 10px 0;
+  }
+  .psychosis-desc {
+    font-size: 0.88em;
+    color: #6b5a3e;
+    font-style: italic;
+    margin: 10px 0 16px;
+    line-height: 1.5;
+  }
+  .psychosis-btn {
+    padding: 10px 20px;
+    background: #8b2500;
+    color: #fff;
+    border: none;
+    border-radius: 6px;
+    font-family: inherit;
+    font-size: 0.9em;
+    font-weight: bold;
+    cursor: pointer;
+    margin: 4px;
+  }
+  .psychosis-btn:active { background: #6b1500; }
+  .psychosis-btn.reroll {
+    background: #6b4423;
+ }
 
   .goal-controls {
     display: flex; gap: 6px; align-items: center;
@@ -438,6 +526,9 @@
     <div class="tracker-cells" id="goalCells"></div>
   </div>
 
+     <h2>🎭 Психозы</h2>
+  <ul class="psychosis-list" id="psychosisList"></ul>
+  <div class="psychosis-empty" id="psychosisEmpty">Разум пока чист. Но Завеса растёт...</div>
   <h2>🩸 Ранения</h2>
   <div class="wound-tracker">
     <div class="wound-step active" data-w="0" onclick="setWound(0)">Здоров</div>
@@ -464,6 +555,16 @@
 
 <div class="toast" id="toast">Сохранено!</div>
 
+ <div class="psychosis-modal" id="psychosisModal">
+  <div class="psychosis-content">
+    <div class="psychosis-title">☠ ЗАВЕСА РАЗОРВАНА ☠</div>
+    <div style="font-size:0.9em;color:#6b5a3e;margin-bottom:12px">Твой разум не выдержал. Из тьмы приходит...</div>
+    <div class="psychosis-reveal" id="psychosisRevealName"></div>
+    <div class="psychosis-desc" id="psychosisRevealDesc"></div>
+    <button class="psychosis-btn" onclick="acceptPsychosis()">Принять судьбу</button>
+    <button class="psychosis-btn reroll" onclick="rerollPsychosis()">🎲 Перебросить</button>
+  </div>
+ </div>
 <div class="roll-modal" id="rollModal" onclick="closeRoll()">
   <div class="roll-content" onclick="event.stopPropagation()">
     <div class="roll-skill-name" id="rollSkillName"></div>
@@ -476,6 +577,21 @@
   let currentHour = 12;
   let goalMax = 6;
   let goalValue = 0;
+     let psychoses = [];
+  let pendingPsychosis = null;
+
+  const psychosisTable = [
+    { name: 'Паранойя', effect: 'Кажется, что все вокруг — часть заговора. −1 куб ко всем социальным проверкам.' },
+    { name: 'Галлюцинации', effect: 'Видит и слышит то, чего нет. Мастер может подменить результат броска на Чутьё.' },
+    { name: 'Мания преследования', effect: 'Уверен, что за ним следят мёртвые. Не может оставаться один — паника.' },
+    { name: 'Апатия', effect: 'Опустошение души. −1 куб ко всем броскам на Волю.' },
+    { name: 'Истерия', effect: 'При стрессе брось 1д6: 1-2 кричишь, 3-4 плачешь, 5-6 смеёшься.' },
+    { name: 'Фобия крови', effect: 'Увидев кровь, обязан пройти проверку Хладнокровия или сбежать.' },
+    { name: 'Бессонница', effect: 'Не может нормально спать. Утром −1 куб к первому броску в сцене.' },
+    { name: 'Навязчивая идея', effect: 'Одержим мыслью (определяет мастер). Должен действовать согласно ей.' },
+    { name: 'Амнезия', effect: 'Забывает последнюю сцену. Все связи временно обнуляются.' },
+    { name: 'Голоса', effect: 'Слышит шёпот Завесы. Голоса дают подсказки, но подталкивают к плохим поступкам.' }
+  ];
   let removedGear = [];
   let foundItems = [];
   let charLevel = 1;
@@ -653,12 +769,62 @@
     document.getElementById('veilCount').textContent = veilValue;
   }
 
-  function setVeil(n) {
+    function setVeil(n) {
     veilValue = (veilValue === n) ? n - 1 : n;
     if (veilValue < 0) veilValue = 0;
     renderVeil();
     saveTrackers();
-    if (veilValue >= 10) showToast('☠ Завеса разорвана! Психоз!', true);
+    if (veilValue >= 10) {
+      triggerPsychosis();
+    }
+  }
+
+  function triggerPsychosis() {
+    const idx = Math.floor(Math.random() * psychosisTable.length);
+    pendingPsychosis = psychosisTable[idx];
+    document.getElementById('psychosisRevealName').textContent = '🎭 ' + pendingPsychosis.name;
+    document.getElementById('psychosisRevealDesc').textContent = pendingPsychosis.effect;
+    document.getElementById('psychosisModal').classList.add('show');
+  }
+
+  function acceptPsychosis() {
+    if (pendingPsychosis) {
+      psychoses.push({ name: pendingPsychosis.name, effect: pendingPsychosis.effect });
+      renderPsychoses();
+      pendingPsychosis = null;
+    }
+    document.getElementById('psychosisModal').classList.remove('show');
+    veilValue = 0;
+    renderVeil();
+    saveTrackers();
+    showToast('Завеса обнулилась. Психоз получен.', true);
+  }
+
+  function rerollPsychosis() {
+    const idx = Math.floor(Math.random() * psychosisTable.length);
+    pendingPsychosis = psychosisTable[idx];
+    document.getElementById('psychosisRevealName').textContent = '🎭 ' + pendingPsychosis.name;
+    document.getElementById('psychosisRevealDesc').textContent = pendingPsychosis.effect;
+  }
+
+  function renderPsychoses() {
+    const list = document.getElementById('psychosisList');
+    const empty = document.getElementById('psychosisEmpty');
+    if (!list || !empty) return;
+    if (psychoses.length === 0) {
+      list.innerHTML = '';
+      empty.style.display = 'block';
+      return;
+    }
+    empty.style.display = 'none';
+    let html = '';
+    psychoses.forEach(p => {
+      html += '<li class="psychosis-item">';
+      html += '<div class="psychosis-name">🎭 ' + p.name + '</div>';
+      html += '<div class="psychosis-effect">' + p.effect + '</div>';
+      html += '</li>';
+    });
+    list.innerHTML = html;
   }
 
   function getPeriodName(h) {
@@ -885,7 +1051,7 @@
       skills,
       bonds: [1,2,3,4].map(i => document.getElementById('bond'+i).value),
       gear: document.getElementById('gear').value,
-      removedGear, foundItems,
+            removedGear, foundItems, psychoses,
       wound: getWoundLevel(),
       story: document.getElementById('story').value,
       veil: veilValue,
@@ -923,6 +1089,8 @@
       document.getElementById('gear').value = d.gear || '';
       removedGear = d.removedGear || [];
       foundItems = d.foundItems || [];
+           psychoses = d.psychoses || [];
+      renderPsychoses();
       showGear(); renderFoundItems();
       setWound(d.wound || 0);
       document.getElementById('story').value = d.story || '';
