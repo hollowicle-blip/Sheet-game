@@ -625,14 +625,19 @@
     <div class="roll-total" id="rollTotal">—</div>
     <button class="roll-close" onclick="closeRoll()">Закрыть</button>
   </div>
-  <script>
+      <script>
+  // === ГЛОБАЛЬНЫЕ ПЕРЕМЕННЫЕ ===
   let veilValue = 0;
   let currentHour = 12;
   let goalMax = 6;
   let goalValue = 0;
-     let psychoses = [];
+  let removedGear = [];
+  let foundItems = [];
+  let charLevel = 1;
+  let psychoses = [];
   let pendingPsychosis = null;
 
+  // === ДАННЫЕ ===
   const psychosisTable = [
     { name: 'Паранойя', effect: 'Кажется, что все вокруг — часть заговора. −1 куб ко всем социальным проверкам.' },
     { name: 'Галлюцинации', effect: 'Видит и слышит то, чего нет. Мастер может подменить результат броска на Чутьё.' },
@@ -645,15 +650,8 @@
     { name: 'Амнезия', effect: 'Забывает последнюю сцену. Все связи временно обнуляются.' },
     { name: 'Голоса', effect: 'Слышит шёпот Завесы. Голоса дают подсказки, но подталкивают к плохим поступкам.' }
   ];
-  let removedGear = [];
-  let foundItems = [];
-  let charLevel = 1;
 
-  // === ФОРМУЛЫ УРОВНЯ ===
-  function getMaxPoints(level) { return 4 + level * 4; }   // Ур.1=8, Ур.2=12, Ур.3=16...
-  function getSkillCap(level) { return 2 + level; }         // Ур.1=3, Ур.2=4, Ур.3=5...
-
-     const estateData = {
+  const estateData = {
     'Дворянство': {
       icon: '👑',
       circle: 'Офицеры, губернаторы, светское общество, придворные.',
@@ -692,21 +690,6 @@
     }
   };
 
-  function showEstateHint() {
-    const estate = document.getElementById('estate').value;
-    const hint = document.getElementById('estateHint');
-    const data = estateData[estate];
-    if (!data) {
-      hint.classList.remove('visible');
-      hint.innerHTML = '';
-      return;
-    }
-    hint.innerHTML = '<div class="estate-hint-title">' + data.icon + ' ' + estate + '</div>'
-      + '<div class="estate-circle">🤝 <strong>Свои круги:</strong> ' + data.circle + '</div>'
-      + '<div style="margin-top:6px"><span class="estate-duty">⚖ <strong>Обязательство:</strong> ' + data.duty + '</span></div>'
-      + '<div style="margin-top:6px;color:#5a7a3a;font-weight:bold">🎲 ' + data.bonus + '</div>';
-    hint.classList.add('visible');
-   }
   const gearData = {
     officer: [
       { name: 'Револьвер «Наган»', desc: '<span class="gear-dmg">урон 2</span>' },
@@ -746,6 +729,49 @@
     ]
   };
 
+  // === ФОРМУЛЫ УРОВНЯ ===
+  function getMaxPoints(level) { return 4 + level * 4; }
+  function getSkillCap(level) { return 2 + level; }
+
+  // === ЖУРНАЛ РАССЛЕДОВАНИЯ ===
+  function switchJournalTab(tab) {
+    document.querySelectorAll('.journal-tab').forEach(t => {
+      t.classList.toggle('active', t.dataset.tab === tab);
+    });
+    document.querySelectorAll('.journal-page').forEach(p => {
+      p.classList.toggle('active', p.dataset.page === tab);
+    });
+  }
+
+  function autoSaveJournal() {
+    const existing = localStorage.getItem('rpg_sheet_v6');
+    if (existing) {
+      try {
+        const d = JSON.parse(existing);
+        d.journalClues = document.getElementById('journalClues').value;
+        d.journalNpc = document.getElementById('journalNpc').value;
+        d.journalNotes = document.getElementById('journalNotes').value;
+        localStorage.setItem('rpg_sheet_v6', JSON.stringify(d));
+      } catch(e) {}
+    }
+  }
+
+  // === ПОДСКАЗКИ СОСЛОВИЙ ===
+  function showEstateHint() {
+    const estate = document.getElementById('estate').value;
+    const hint = document.getElementById('estateHint');
+    const data = estateData[estate];
+    if (!data) {
+      hint.classList.remove('visible'); hint.innerHTML = ''; return;
+    }
+    hint.innerHTML = '<div class="estate-hint-title">' + data.icon + ' ' + estate + '</div>'
+      + '<div class="estate-circle">🤝 <strong>Свои круги:</strong> ' + data.circle + '</div>'
+      + '<div style="margin-top:6px"><span class="estate-duty">⚖ <strong>Обязательство:</strong> ' + data.duty + '</span></div>'
+      + '<div style="margin-top:6px;color:#5a7a3a;font-weight:bold">🎲 ' + data.bonus + '</div>';
+    hint.classList.add('visible');
+  }
+
+  // === СНАРЯЖЕНИЕ ===
   function showGear() {
     const key = document.getElementById('gear').value;
     const box = document.getElementById('gearDetails');
@@ -793,9 +819,7 @@
     const empty = document.getElementById('foundEmpty');
     if (!list || !empty) return;
     if (foundItems.length === 0) {
-      list.innerHTML = '';
-      empty.style.display = 'block';
-      return;
+      list.innerHTML = ''; empty.style.display = 'block'; return;
     }
     empty.style.display = 'none';
     let html = '';
@@ -808,6 +832,7 @@
     list.innerHTML = html;
   }
 
+  // === ТРЕКЕР ЗАВЕСЫ ===
   function renderVeil() {
     const box = document.getElementById('veilCells');
     if (!box) return;
@@ -822,7 +847,7 @@
     document.getElementById('veilCount').textContent = veilValue;
   }
 
-    function setVeil(n) {
+  function setVeil(n) {
     veilValue = (veilValue === n) ? n - 1 : n;
     if (veilValue < 0) veilValue = 0;
     renderVeil();
@@ -832,6 +857,7 @@
     }
   }
 
+  // === ПСИХОЗЫ ===
   function triggerPsychosis() {
     const idx = Math.floor(Math.random() * psychosisTable.length);
     pendingPsychosis = psychosisTable[idx];
@@ -859,35 +885,13 @@
     document.getElementById('psychosisRevealName').textContent = '🎭 ' + pendingPsychosis.name;
     document.getElementById('psychosisRevealDesc').textContent = pendingPsychosis.effect;
   }
-  function switchJournalTab(tab) {
-    document.querySelectorAll('.journal-tab').forEach(t => {
-      t.classList.toggle('active', t.dataset.tab === tab);
-    });
-    document.querySelectorAll('.journal-page').forEach(p => {
-      p.classList.toggle('active', p.dataset.page === tab);
-    });
-  }
 
-  function autoSaveJournal() {
-    const existing = localStorage.getItem('rpg_sheet_v6');
-    if (existing) {
-      try {
-        const d = JSON.parse(existing);
-        d.journalClues = document.getElementById('journalClues').value;
-        d.journalNpc = document.getElementById('journalNpc').value;
-        d.journalNotes = document.getElementById('journalNotes').value;
-        localStorage.setItem('rpg_sheet_v6', JSON.stringify(d));
-      } catch(e) {}
-    }
-       }
   function renderPsychoses() {
     const list = document.getElementById('psychosisList');
     const empty = document.getElementById('psychosisEmpty');
     if (!list || !empty) return;
     if (psychoses.length === 0) {
-      list.innerHTML = '';
-      empty.style.display = 'block';
-      return;
+      list.innerHTML = ''; empty.style.display = 'block'; return;
     }
     empty.style.display = 'none';
     let html = '';
@@ -900,13 +904,7 @@
     list.innerHTML = html;
   }
 
-  function getPeriodName(h) {
-    if (h >= 6 && h < 12) return { text: 'Утро', cls: 'active-morning' };
-    if (h >= 12 && h < 18) return { text: 'День', cls: 'active-day' };
-    if (h >= 18 && h < 24) return { text: 'Вечер', cls: 'active-evening' };
-    return { text: 'Ночь', cls: 'active-night' };
-  }
-
+  // === ВРЕМЯ СУТОК ===
   function isNightNow() { return currentHour >= 0 && currentHour < 6; }
 
   function setHour(h) {
@@ -925,6 +923,7 @@
     saveTrackers();
   }
 
+  // === ТРЕКЕР ЦЕЛИ ===
   function renderGoal() {
     const box = document.getElementById('goalCells');
     if (!box) return;
@@ -973,7 +972,7 @@
     }
   }
 
-  /* === СИСТЕМА УРОВНЯ === */
+  // === СИСТЕМА УРОВНЯ ===
   function updateLevelDisplay() {
     const maxPoints = getMaxPoints(charLevel);
     const cap = getSkillCap(charLevel);
@@ -996,16 +995,13 @@
     const newLevel = charLevel + d;
     if (newLevel < 1) { showToast('Минимальный уровень — 1', true); return; }
     if (newLevel > 20) { showToast('Максимальный уровень — 20', true); return; }
-
     if (d < 0) {
-      // Проверка: не понизить, если очков потрачено больше нового максимума
       const spent = getSpentPoints();
       const newMax = getMaxPoints(newLevel);
       if (spent > newMax) {
         showToast('Сначала снимите очки навыков (тратится ' + spent + ', станет доступно ' + newMax + ')', true);
         return;
       }
-      // Проверка: не понизить, если какой-то навык выше нового потолка
       const maxSkill = getMaxSkillInSheet();
       const newCap = getSkillCap(newLevel);
       if (maxSkill > newCap) {
@@ -1013,13 +1009,13 @@
         return;
       }
     }
-    
     charLevel = newLevel;
     updateLevelDisplay();
     updatePointsDisplay();
     if (d > 0) showToast('⭐ Уровень повышен! +4 очка, потолок +1');
   }
 
+  // === НАВЫКИ ===
   function getSpentPoints() {
     let t = 0;
     document.querySelectorAll('.skill-val').forEach(s => { t += parseInt(s.textContent) || 0; });
@@ -1046,9 +1042,12 @@
     updatePointsDisplay();
   }
 
+  // === БРОСКИ КУБИКОВ ===
   function rollSkill(name, level) {
     const woundLevel = getWoundLevel();
-    if (woundLevel >= 3) { showToast('☠ Персонаж мёртв и не может действовать!', true); return; }
+    if (woundLevel >= 3) {
+      showToast('☠ Персонаж мёртв и не может действовать!', true); return;
+    }
     const woundPenalty = woundLevel;
     const nightPenalty = isNightNow() ? 1 : 0;
     const totalPenalty = woundPenalty + nightPenalty;
@@ -1090,6 +1089,7 @@
     });
   });
 
+  // === РАНЕНИЯ ===
   function setWound(level) {
     document.querySelectorAll('.wound-step').forEach(s => {
       const w = parseInt(s.dataset.w); s.className = 'wound-step';
@@ -1113,6 +1113,7 @@
     return 0;
   }
 
+  // === СОХРАНЕНИЕ / ЗАГРУЗКА ===
   function gather() {
     const skills = {};
     document.querySelectorAll('.skill-val').forEach(s => { skills[s.dataset.skill] = parseInt(s.textContent); });
@@ -1124,17 +1125,18 @@
       skills,
       bonds: [1,2,3,4].map(i => document.getElementById('bond'+i).value),
       gear: document.getElementById('gear').value,
-            removedGear, foundItems,       psychoses,
-      journalClues: document.getElementById('journalClues').value,
-      journalNpc: document.getElementById('journalNpc').value,
-      journalNotes: document.getElementById('journalNotes').value,,
+      removedGear, foundItems,
       wound: getWoundLevel(),
       story: document.getElementById('story').value,
       veil: veilValue,
       hour: currentHour,
       goalName: document.getElementById('goalName').value,
       goalMax: goalMax,
-      goalValue: goalValue
+      goalValue: goalValue,
+      psychoses,
+      journalClues: document.getElementById('journalClues').value,
+      journalNpc: document.getElementById('journalNpc').value,
+      journalNotes: document.getElementById('journalNotes').value
     };
   }
 
@@ -1144,13 +1146,11 @@
   }
 
   function load() {
-    function load() {
     const raw = localStorage.getItem('rpg_sheet_v6');
     if (!raw) {
       updateLevelDisplay(); updatePointsDisplay();
       renderFoundItems(); renderVeil(); renderGoal(); setHour(12);
-      renderPsychoses();
-      return;
+      renderPsychoses(); return;
     }
     try {
       const d = JSON.parse(raw);
@@ -1175,12 +1175,12 @@
       goalMax = d.goalMax || 6;
       goalValue = d.goalValue || 0;
       document.getElementById('goalName').value = d.goalName || '';
-      
+
       // Загрузка психозов
       psychoses = d.psychoses || [];
       renderPsychoses();
 
-      // Загрузка журнала расследования
+      // Загрузка журнала
       document.getElementById('journalClues').value = d.journalClues || '';
       document.getElementById('journalNpc').value = d.journalNpc || '';
       document.getElementById('journalNotes').value = d.journalNotes || '';
@@ -1188,12 +1188,13 @@
       renderVeil(); setHour(currentHour); renderGoal();
       updateLevelDisplay();
       updatePointsDisplay();
+      showEstateHint();
     } catch(e) {
       updateLevelDisplay(); updatePointsDisplay();
       renderFoundItems(); renderVeil(); renderGoal(); setHour(12);
       renderPsychoses();
     }
-         }
+  }
 
   function resetAll() {
     if (!confirm('Стереть все данные?')) return;
@@ -1225,6 +1226,7 @@
     t.classList.add('show'); setTimeout(() => t.classList.remove('show'), 2000);
   }
 
+  // === ИНИЦИАЛИЗАЦИЯ СОБЫТИЙ ===
   document.getElementById('foundInput').addEventListener('keydown', function(e) {
     if (e.key === 'Enter') addFoundItem();
   });
@@ -1233,4 +1235,3 @@
 </script>
 </body>
 </html>
-                                                                                               </div>
