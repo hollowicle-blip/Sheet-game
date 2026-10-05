@@ -362,6 +362,44 @@
     border: none; border-radius: 6px; font-family: inherit;
     font-size: 0.9em; font-weight: bold; cursor: pointer;
   }
+   .journal-tabs {
+    display: flex; gap: 0; margin-bottom: 0;
+    border-bottom: 2px solid #c4a96a;
+  }
+  .journal-tab {
+    flex: 1; padding: 8px 4px; text-align: center;
+    font-size: 0.82em; font-weight: bold;
+    color: #8a7050; cursor: pointer;
+    background: rgba(180,150,90,0.1);
+    border: 1px solid #c4a96a;
+    border-bottom: none;
+    border-radius: 6px 6px 0 0;
+    transition: all 0.15s;
+    user-select: none;
+  }
+  .journal-tab:active { transform: scale(0.97); }
+  .journal-tab.active {
+    background: #f4e8c1;
+    color: #5a3a1a;
+    border-bottom: 2px solid #f4e8c1;
+    margin-bottom: -2px;
+  }
+  .journal-page { display: none; }
+  .journal-page.active { display: block; }
+  .journal-page textarea {
+    width: 100%; min-height: 120px;
+    padding: 10px; border: 1px solid #c4a96a;
+    border-top: none; border-radius: 0 0 6px 6px;
+    background: #faf3e0; font-family: inherit;
+    font-size: 0.88em; color: #3b2f1e;
+    resize: vertical; line-height: 1.5;
+    margin-bottom: 0;
+  }
+  .journal-hint {
+    font-size: 0.75em; color: #8a7050;
+    text-align: right; margin-top: 4px;
+    font-style: italic;
+  }
   .divider { border: none; border-top: 1px dashed #c4a96a; margin: 16px 0; }
 </style>
 </head>
@@ -537,7 +575,22 @@
     <div class="wound-step" data-w="3" onclick="setWound(3)">☠ СМЕРТЬ</div>
   </div>
   <div class="wound-penalty" id="woundPenalty"></div>
-
+  <h2>🔍 Журнал расследования</h2>
+  <div class="journal-tabs">
+    <div class="journal-tab active" data-tab="clues" onclick="switchJournalTab('clues')">🔎 Улики</div>
+    <div class="journal-tab" data-tab="npc" onclick="switchJournalTab('npc')">👤 NPC</div>
+    <div class="journal-tab" data-tab="notes" onclick="switchJournalTab('notes')">📝 Заметки</div>
+  </div>
+  <div class="journal-page active" data-page="clues">
+    <textarea id="journalClues" placeholder="Улики, зацепки, странные находки...&#10;&#10;Например:&#10;— Кровавый отпечаток на окне (улица Садовая, 12)&#10;— Сломанные часы остановились на 03:15&#10;— Свидетель видел тень без хозяина" oninput="autoSaveJournal()"></textarea>
+  </div>
+  <div class="journal-page" data-page="npc">
+    <textarea id="journalNpc" placeholder="Имена, описания, отношения...&#10;&#10;Например:&#10;— Пётр Иванович, городовой. Знает район, но пьёт.&#10;— Мария, служанка в доме купца. Боится чего-то.&#10;— Отец Сергий, священник. Подозрительно спокоен." oninput="autoSaveJournal()"></textarea>
+  </div>
+  <div class="journal-page" data-page="notes">
+    <textarea id="journalNotes" placeholder="Версии, догадки, планы...&#10;&#10;Например:&#10;— Убийства связаны с лунным циклом?&#10;— Проверить подвал церкви на рассвете&#10;— НЕ доверять доктору — его алиби не сходится" oninput="autoSaveJournal()"></textarea>
+  </div>
+  <div class="journal-hint">Автосохранение при вводе</div>
   <h2>📖 История</h2>
   <textarea id="story" rows="5" placeholder="Расскажи историю своего персонажа..."></textarea>
 
@@ -806,7 +859,27 @@
     document.getElementById('psychosisRevealName').textContent = '🎭 ' + pendingPsychosis.name;
     document.getElementById('psychosisRevealDesc').textContent = pendingPsychosis.effect;
   }
+  function switchJournalTab(tab) {
+    document.querySelectorAll('.journal-tab').forEach(t => {
+      t.classList.toggle('active', t.dataset.tab === tab);
+    });
+    document.querySelectorAll('.journal-page').forEach(p => {
+      p.classList.toggle('active', p.dataset.page === tab);
+    });
+  }
 
+  function autoSaveJournal() {
+    const existing = localStorage.getItem('rpg_sheet_v6');
+    if (existing) {
+      try {
+        const d = JSON.parse(existing);
+        d.journalClues = document.getElementById('journalClues').value;
+        d.journalNpc = document.getElementById('journalNpc').value;
+        d.journalNotes = document.getElementById('journalNotes').value;
+        localStorage.setItem('rpg_sheet_v6', JSON.stringify(d));
+      } catch(e) {}
+    }
+       }
   function renderPsychoses() {
     const list = document.getElementById('psychosisList');
     const empty = document.getElementById('psychosisEmpty');
@@ -1051,7 +1124,10 @@
       skills,
       bonds: [1,2,3,4].map(i => document.getElementById('bond'+i).value),
       gear: document.getElementById('gear').value,
-            removedGear, foundItems, psychoses,
+            removedGear, foundItems,       psychoses,
+      journalClues: document.getElementById('journalClues').value,
+      journalNpc: document.getElementById('journalNpc').value,
+      journalNotes: document.getElementById('journalNotes').value,,
       wound: getWoundLevel(),
       story: document.getElementById('story').value,
       veil: veilValue,
@@ -1068,10 +1144,12 @@
   }
 
   function load() {
+    function load() {
     const raw = localStorage.getItem('rpg_sheet_v6');
     if (!raw) {
       updateLevelDisplay(); updatePointsDisplay();
       renderFoundItems(); renderVeil(); renderGoal(); setHour(12);
+      renderPsychoses();
       return;
     }
     try {
@@ -1089,8 +1167,6 @@
       document.getElementById('gear').value = d.gear || '';
       removedGear = d.removedGear || [];
       foundItems = d.foundItems || [];
-           psychoses = d.psychoses || [];
-      renderPsychoses();
       showGear(); renderFoundItems();
       setWound(d.wound || 0);
       document.getElementById('story').value = d.story || '';
@@ -1099,14 +1175,25 @@
       goalMax = d.goalMax || 6;
       goalValue = d.goalValue || 0;
       document.getElementById('goalName').value = d.goalName || '';
+      
+      // Загрузка психозов
+      psychoses = d.psychoses || [];
+      renderPsychoses();
+
+      // Загрузка журнала расследования
+      document.getElementById('journalClues').value = d.journalClues || '';
+      document.getElementById('journalNpc').value = d.journalNpc || '';
+      document.getElementById('journalNotes').value = d.journalNotes || '';
+
       renderVeil(); setHour(currentHour); renderGoal();
       updateLevelDisplay();
       updatePointsDisplay();
     } catch(e) {
       updateLevelDisplay(); updatePointsDisplay();
       renderFoundItems(); renderVeil(); renderGoal(); setHour(12);
+      renderPsychoses();
     }
-  }
+         }
 
   function resetAll() {
     if (!confirm('Стереть все данные?')) return;
